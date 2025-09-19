@@ -68,9 +68,24 @@ class DemoDataset(DatasetTemplate):
         data_dict = self.prepare_data(data_dict=input_dict)
         return data_dict
 
+class ONNXWrapper(torch.nn.Module):
+    def __init__(self, model):
+        super().__init__()
+        self.model = model
+
+    def forward(self, voxels, voxel_coords, voxel_num_points):
+        batch_dict = {
+            'voxels': voxels,
+            'voxel_coords': voxel_coords,
+            'voxel_num_points': voxel_num_points,
+            'batch_size': 1,
+        }
+        pred_dicts = self.model(batch_dict)
+        return pred_dicts, 
+
 def parse_config():
     parser = argparse.ArgumentParser(description='arg parser')
-    parser.add_argument('--cfg_file', type=str, default='cfgs/kitti_models/pointpillar.yaml',
+    parser.add_argument('--cfg_file', type=str, default='/media/taole/mydisk/DL_PROJECT/CUDA-PointPillars/cfgs/kitti_models/pointpillar.yaml',
                         help='specify the config for demo')
     parser.add_argument('--data_path', type=str, default='data',
                         help='specify the point cloud data file or directory')
@@ -119,20 +134,31 @@ def main():
           dtype=torch.int32,
           device='cuda:0')
 
-      dummy_input = dict()
-      dummy_input['voxels'] = dummy_voxels
-      dummy_input['voxel_num_points'] = dummy_voxel_num
-      dummy_input['voxel_coords'] = dummy_voxel_idxs
-      dummy_input['batch_size'] = 1
+    #   dummy_input = dict()
+    #   dummy_input['voxels'] = dummy_voxels
+    #   dummy_input['voxel_num_points'] = dummy_voxel_num
+    #   dummy_input['voxel_coords'] = dummy_voxel_idxs
+    #   dummy_input['batch_size'] = 1
 
-      torch.onnx.export(model,       # model being run
+    #   _ = model(dummy_input)
+      dummy_input = (
+          dummy_voxels,        # [M, 32, 4]
+          dummy_voxel_idxs,    # [M, 4]
+          dummy_voxel_num,     # [1]
+      )
+
+      wrapped_model = ONNXWrapper(model)
+      wrapped_model.eval()
+      wrapped_model.cuda()
+
+      torch.onnx.export(wrapped_model,       # model being run
           dummy_input,               # model input (or a tuple for multiple inputs)
           os.path.join(args.out_dir, "pointpillar_raw.onnx"),  # where to save the model (can be a file or file-like object)
           export_params=True,        # store the trained parameter weights inside the model file
           opset_version=11,          # the ONNX version to export the model to
           do_constant_folding=True,  # whether to execute constant folding for optimization
           keep_initializers_as_inputs=True,
-          input_names = ['voxels', 'voxel_num', 'voxel_idxs'],   # the model's input names
+          input_names = ['voxels', 'voxel_idxs', 'voxel_num'],   # the model's input names
           output_names = ['cls_preds', 'box_preds', 'dir_cls_preds'], # the model's output names
           )
 

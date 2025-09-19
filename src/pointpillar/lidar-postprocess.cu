@@ -467,8 +467,8 @@ public:
 
         thrust::device_ptr<combined_float> thr_bndbox_((combined_float *)bndbox_);
         thrust::stable_sort_by_key(thrust::cuda::par.on(_stream), score_, score_ + bndbox_num_, thr_bndbox_, thrust::greater<float>());
+        if (bndbox_num_ == 0) return;
         checkRuntime(nms_launch(bndbox_num_, bndbox_, param_.nms_thresh, h_mask_, _stream));
-
         checkRuntime(cudaMemcpyAsync(h_bndbox_, bndbox_, bndbox_num_ * 9 * sizeof(float), cudaMemcpyDeviceToHost, _stream));
         checkRuntime(cudaStreamSynchronize(_stream));
 

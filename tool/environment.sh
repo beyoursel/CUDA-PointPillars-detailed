@@ -22,16 +22,16 @@
 
 # export CUDA_VISIBLE_DEVICES=2
 
-export TensorRT_Lib=/lib/aarch64-linux-gnu/
-export TensorRT_Inc=/usr/include/aarch64-linux-gnu/
-export TensorRT_Bin=/usr/src/tensorrt/bin/
+export TensorRT_Lib=/media/taole/mydisk/TensorRT-8.4.3.1/lib
+export TensorRT_Inc=/media/taole/mydisk/TensorRT-8.4.3.1/include
+export TensorRT_Bin=/media/taole/mydisk/TensorRT-8.4.3.1/bin
 
-export CUDA_Lib=/usr/local/cuda-11.4/targets/aarch64-linux/lib/
-export CUDA_Inc=/usr/local/cuda-11.4/targets/aarch64-linux/include/
-export CUDA_Bin=/usr/local/cuda-11.4/bin/
-export CUDA_HOME=/usr/local/cuda-11.4/
+export CUDA_Lib=/usr/local/cuda-11.6/targets/x86_64-linux/lib/
+export CUDA_Inc=/usr/local/cuda-11.6/targets/x86_64-linux/include/
+export CUDA_Bin=/usr/local/cuda-11.6/bin/
+export CUDA_HOME=/usr/local/cuda-11.6/
 
-export CUDNN_Lib=/lib/aarch64-linux-gnu/
+export CUDNN_Lib=/usr/local/cuda-11.6/lib64
 
 # fp16/int8
 export DEBUG_PRECISION=fp16
