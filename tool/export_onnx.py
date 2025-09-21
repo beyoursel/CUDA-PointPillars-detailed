@@ -85,7 +85,7 @@ class ONNXWrapper(torch.nn.Module):
 
 def parse_config():
     parser = argparse.ArgumentParser(description='arg parser')
-    parser.add_argument('--cfg_file', type=str, default='/media/taole/mydisk/DL_PROJECT/CUDA-PointPillars/cfgs/kitti_models/pointpillar.yaml',
+    parser.add_argument('--cfg_file', type=str, default='/media/taole/mydisk/DL_PROJECT/CUDA-PointPillars-detailed/cfgs/kitti_models/pointpillar.yaml',
                         help='specify the config for demo')
     parser.add_argument('--data_path', type=str, default='data',
                         help='specify the point cloud data file or directory')
@@ -113,6 +113,10 @@ def main():
     model.cuda()
     model.eval()
 
+    wrapped_model = ONNXWrapper(model)
+    wrapped_model.eval()
+    wrapped_model.cuda()
+
     np.set_printoptions(threshold=np.inf)
 
     with torch.no_grad():
@@ -122,34 +126,31 @@ def main():
       dummy_voxels = torch.zeros(
           (MAX_VOXELS, 32, 4),
           dtype=torch.float32,
-          device='cuda:0')
+          device='cuda:0') # voxel内的点特征，每个voxel最多32个，不足32个点用0补齐
 
       dummy_voxel_idxs = torch.zeros(
           (MAX_VOXELS, 4),
           dtype=torch.int32,
-          device='cuda:0')
+          device='cuda:0') # voxel坐标，0维是batch_id，1、2、3维度分别为ZYX
 
       dummy_voxel_num = torch.zeros(
           (1,),
           dtype=torch.int32,
           device='cuda:0')
 
-    #   dummy_input = dict()
-    #   dummy_input['voxels'] = dummy_voxels
-    #   dummy_input['voxel_num_points'] = dummy_voxel_num
-    #   dummy_input['voxel_coords'] = dummy_voxel_idxs
-    #   dummy_input['batch_size'] = 1
+    #   dummy_test = dict()
+    #   dummy_test['voxels'] = dummy_voxels
+    #   dummy_test['voxel_num_points'] = dummy_voxel_num
+    #   dummy_test['voxel_coords'] = dummy_voxel_idxs
+    #   dummy_test['batch_size'] = 1
+    #   _ = model(dummy_test)
 
-    #   _ = model(dummy_input)
+
       dummy_input = (
           dummy_voxels,        # [M, 32, 4]
           dummy_voxel_idxs,    # [M, 4]
           dummy_voxel_num,     # [1]
       )
-
-      wrapped_model = ONNXWrapper(model)
-      wrapped_model.eval()
-      wrapped_model.cuda()
 
       torch.onnx.export(wrapped_model,       # model being run
           dummy_input,               # model input (or a tuple for multiple inputs)
@@ -160,11 +161,10 @@ def main():
           keep_initializers_as_inputs=True,
           input_names = ['voxels', 'voxel_idxs', 'voxel_num'],   # the model's input names
           output_names = ['cls_preds', 'box_preds', 'dir_cls_preds'], # the model's output names
-          )
+          ) # 需要修改openpcdet代码，保证输入输出对应
 
     onnx_raw = onnx.load(os.path.join(args.out_dir, "pointpillar_raw.onnx"))  # load onnx model
-    onnx_trim_post = simplify_postprocess(onnx_raw)
-
+    onnx_trim_post = simplify_postprocess(onnx_raw) # onnx graph输出仅到cls_branch、box_branch、dir_cls_branch后的transpose
     onnx_simp, check = simplify(onnx_trim_post)
     assert check, "Simplified ONNX model could not be validated"
 

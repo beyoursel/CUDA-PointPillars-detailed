@@ -40,11 +40,11 @@ def loop_node(graph, current_node, loop_time=0):
 def simplify_postprocess(onnx_model):
   print("Use onnx_graphsurgeon to adjust postprocessing part in the onnx...")
   graph = gs.import_onnx(onnx_model)
-
+  # create new output variable
   cls_preds = gs.Variable(name="cls_preds", dtype=np.float32, shape=(1, 248, 216, 18))
   box_preds = gs.Variable(name="box_preds", dtype=np.float32, shape=(1, 248, 216, 42))
   dir_cls_preds = gs.Variable(name="dir_cls_preds", dtype=np.float32, shape=(1, 248, 216, 12))
-
+  # 取出模型中现有张量
   tmap = graph.tensors()
   new_inputs = [tmap["voxels"], tmap["voxel_idxs"], tmap["voxel_num"]]
   new_outputs = [cls_preds, box_preds, dir_cls_preds]
@@ -57,7 +57,7 @@ def simplify_postprocess(onnx_model):
     out.inputs.clear()
 
   first_ConvTranspose_node = [node for node in graph.nodes if node.op == "ConvTranspose"][0]
-  concat_node = loop_node(graph, first_ConvTranspose_node, 3)
+  concat_node = loop_node(graph, first_ConvTranspose_node, 3) # ConvTranspose后紧跟这bn、relu、concat
   assert concat_node.op == "Concat"
 
   first_node_after_concat = [node for node in graph.nodes if len(node.inputs) != 0 and len(concat_node.outputs) != 0 and node.inputs[0] == concat_node.outputs[0]]
@@ -106,7 +106,7 @@ def simplify_preprocess(onnx_model):
 
   matmul_op = [node for node in graph.nodes if node.op == "MatMul"][0]
   matmul_op.inputs[0] = reshape_0_out
-  matmul_op_out = gs.Variable(name="matmul_op_out", shape = [MAX_VOXELS * 32, 64], dtype=np.float32)
+  matmul_op_out = gs.Variable(name="matmul_op_out", shape = [MAX_VOXELS * 32, 64], dtype=np.float32) # 存在两个输入，一个为inputs[0]，一个为权重张量
   matmul_op.outputs[0] = matmul_op_out
 
   bn_op = [node for node in graph.nodes if node.op == "BatchNormalization"][0]
@@ -131,7 +131,7 @@ def simplify_preprocess(onnx_model):
   reducemax_op.inputs[0] = reshape_1_out
   reducemax_op.attrs['keepdims'] = [0]
 
-  conv_op = [node for node in graph.nodes if node.op == "Conv"][0]
+  conv_op = [node for node in graph.nodes if node.op == "Conv"][0] # 取出第一个Conv
   graph.replace_with_clip([reducemax_op.outputs[0], X, Y], [conv_op.inputs[0]])
 
   graph.inputs = [input_new, X, Y]
