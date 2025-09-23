@@ -60,8 +60,8 @@ struct PostProcessParameter {
             0.8,0.6,1.73,1.57,
             1.76,0.6,1.73,0.0,
             1.76,0.6,1.73,1.57,
-        };
-    nvtype::Float3 anchor_bottom_heights{-1.78,-0.6,-0.6};
+        }; // num_class * 2 (two orientation)
+    nvtype::Float3 anchor_bottom_heights{-1.78,-0.6,-0.6}; // 不同class的anchor下底面高度
     int num_box_values = 7;
     float score_thresh = 0.1;
     float dir_offset = 0.78539;

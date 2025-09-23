@@ -207,8 +207,8 @@ int main(int argc, char** argv) {
         return -1;
     }
 
-    cudaStream_t stream;
-    cudaStreamCreate(&stream);
+    cudaStream_t stream; // CUDA数据类型，用于表示流（stream）的句柄，用于控制在GPU上的操作
+    cudaStreamCreate(&stream); // 在GPU上创建一个新的流，用于管理后续的异步任务
   
     core->print();
     core->set_timer(timer);
@@ -223,7 +223,7 @@ int main(int argc, char** argv) {
         //load points cloud
         unsigned int length = 0;
         void *data = NULL;
-        std::shared_ptr<char> buffer((char *)data, std::default_delete<char[]>());
+        std::shared_ptr<char> buffer((char *)data, std::default_delete<char[]>()); // 以data来初始化buffer
         loadData(dataFile.data(), &data, &length);
         buffer.reset((char *)data);
         int points_size = length/sizeof(float)/4;

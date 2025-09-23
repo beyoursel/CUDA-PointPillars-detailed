@@ -42,15 +42,15 @@ public:
     }
 
     bool init(const std::string& model) {
-        engine_ = TensorRT::load(model);
+        engine_ = TensorRT::load(model); // load pointpillar.plan
         if (engine_ == nullptr) return false;
 
-        cls_dims_ = engine_->static_dims(3);
+        cls_dims_ = engine_->static_dims(3); // 在TensorRT中，每个输入输出张量 都会被分配一个binding index
         box_dims_ = engine_->static_dims(4);
         dir_dims_ = engine_->static_dims(5);
 
-        int32_t volumn = std::accumulate(cls_dims_.begin(), cls_dims_.end(), 1, std::multiplies<int32_t>());
-        checkRuntime(cudaMalloc(&cls_, volumn * sizeof(float)));
+        int32_t volumn = std::accumulate(cls_dims_.begin(), cls_dims_.end(), 1, std::multiplies<int32_t>()); // 所有维度相乘
+        checkRuntime(cudaMalloc(&cls_, volumn * sizeof(float))); // 分配内存
 
         volumn = std::accumulate(box_dims_.begin(), box_dims_.end(), 1, std::multiplies<int32_t>());
         checkRuntime(cudaMalloc(&box_, volumn * sizeof(float)));

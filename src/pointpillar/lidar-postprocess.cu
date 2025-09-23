@@ -413,16 +413,16 @@ public:
     virtual bool init(const PostProcessParameter& param) {
         param_ = param;
 
-        det_num_ = param_.feature_size.x * param_.feature_size.y * param_.num_anchors;
-        checkRuntime(cudaMalloc((void **)&bndbox_, det_num_ * 9 * sizeof(float)));
-        checkRuntime(cudaMallocHost((void **)&h_bndbox_, det_num_ * 9 * sizeof(float)));
-        checkRuntime(cudaMalloc((void **)&score_, det_num_ * sizeof(float)));
+        det_num_ = param_.feature_size.x * param_.feature_size.y * param_.num_anchors; // each location predicts 6 anchors，（在GPU上分配内存）
+        checkRuntime(cudaMalloc((void **)&bndbox_, det_num_ * 9 * sizeof(float))); // each BBox includes 9 attributes（在主机CPU上分配内存）
+        checkRuntime(cudaMallocHost((void **)&h_bndbox_, det_num_ * 9 * sizeof(float))); // move to host
+        checkRuntime(cudaMalloc((void **)&score_, det_num_ * sizeof(float))); // cudaMalloc需要传入的类型是(void **), score_本身是一个指针，因此需要使用&
 
         checkRuntime(cudaMalloc((void **)&anchors_, param_.num_anchors * param_.len_per_anchor * sizeof(float)));
         checkRuntime(cudaMalloc((void **)&anchor_bottom_heights_, param_.num_classes * sizeof(float)));
         checkRuntime(cudaMalloc((void **)&object_counter_, sizeof(int)));
 
-        checkRuntime(cudaMemcpy(anchors_, param_.anchors, param_.num_anchors * param_.len_per_anchor * sizeof(float), cudaMemcpyDefault));
+        checkRuntime(cudaMemcpy(anchors_, param_.anchors, param_.num_anchors * param_.len_per_anchor * sizeof(float), cudaMemcpyDefault)); // 用于在CPU和GPU之间拷贝数据，cudaMemcpy(void *dist, const void *src, size_t count)
         checkRuntime(cudaMemcpy(anchor_bottom_heights_, &param_.anchor_bottom_heights, param_.num_classes * sizeof(float), cudaMemcpyDefault));
 
         h_mask_size_ = det_num_ * DIVUP(det_num_, NMS_THREADS_PER_BLOCK) * sizeof(uint64_t);

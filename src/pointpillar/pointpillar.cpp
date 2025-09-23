@@ -60,7 +60,7 @@ public:
 
         res_.reserve(100);
 
-        capacity_points_ = 300000;
+        capacity_points_ = 300000; // 30w
         bytes_capacity_points_ = capacity_points_ * param.voxelization.num_feature * sizeof(float);
         checkRuntime(cudaMalloc(&lidar_points_device_, bytes_capacity_points_));
         checkRuntime(cudaMallocHost(&lidar_points_host_, bytes_capacity_points_));
@@ -102,8 +102,8 @@ public:
         timer_.start(_stream);
 
         size_t bytes_points = num_points * param_.voxelization.num_feature * sizeof(float);
-        checkRuntime(cudaMemcpyAsync(lidar_points_host_, lidar_points, bytes_points, cudaMemcpyHostToHost, _stream));
-        checkRuntime(cudaMemcpyAsync(lidar_points_device_, lidar_points_host_, bytes_points, cudaMemcpyHostToDevice, _stream));
+        checkRuntime(cudaMemcpyAsync(lidar_points_host_, lidar_points, bytes_points, cudaMemcpyHostToHost, _stream)); // 异步的，数据传输可以在后台进行，程序可以在数据传输的同时执行其他任务
+        checkRuntime(cudaMemcpyAsync(lidar_points_device_, lidar_points_host_, bytes_points, cudaMemcpyHostToDevice, _stream)); //
         timer_.stop("[NoSt] CopyLidar");
 
         timer_.start(_stream);
@@ -140,7 +140,7 @@ public:
 
 private:
     CoreParameter param_;
-    nv::EventTimer timer_;
+    nv::EventTimer timer_; // 用于事件计时
     float* lidar_points_device_ = nullptr;
     float* lidar_points_host_ = nullptr;
     size_t capacity_points_ = 0;

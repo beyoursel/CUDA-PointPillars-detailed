@@ -139,7 +139,6 @@ int PPScatterPlugin::enqueue(const nvinfer1::PluginTensorDesc* inputDesc,
 
         auto coords_data = static_cast<const unsigned int *>(inputs[1]);
         auto params_data = static_cast<const unsigned int *>(inputs[2]);
-
         unsigned int featureY = feature_y_size_;
         unsigned int featureX = feature_x_size_;
 

@@ -52,11 +52,11 @@ static __global__ void generateVoxels_random_kernel(const float *points, size_t 
   unsigned int voxel_index = voxel_idy * grid_x_size
                             + voxel_idx;
 
-  unsigned int point_id = atomicAdd(&(mask[voxel_index]), 1);
+  unsigned int point_id = atomicAdd(&(mask[voxel_index]), 1); // mask记录每个体素内点的数量，point_id为mask更新前的值
 
-  if(point_id >= POINTS_PER_VOXEL) return;
-  float *address = voxels + (voxel_index*POINTS_PER_VOXEL + point_id)*4;
-  atomicExch(address+0, point.x);
+  if(point_id >= POINTS_PER_VOXEL) return; // 点数达到最大阈值，则当前线程返回
+  float *address = voxels + (voxel_index*POINTS_PER_VOXEL + point_id)*4; // 计算当前体素内第point_id个点的地址
+  atomicExch(address+0, point.x); // 将每个点的坐标存储到voxels数组中
   atomicExch(address+1, point.y);
   atomicExch(address+2, point.z);
   atomicExch(address+3, point.w);
@@ -99,26 +99,26 @@ static __global__ void generateBaseFeatures_kernel(unsigned int *mask, float *vo
 
   unsigned int voxel_index = voxel_idy * grid_x_size
                            + voxel_idx;
-  unsigned int count = mask[voxel_index];
+  unsigned int count = mask[voxel_index]; // 对应体素内点云数量
   if( !(count>0) ) return;
   count = count<POINTS_PER_VOXEL?count:POINTS_PER_VOXEL;
 
   unsigned int current_pillarId = 0;
-  current_pillarId = atomicAdd(pillar_num, 1);
+  current_pillarId = atomicAdd(pillar_num, 1); // 记录有效pillar的个数
 
-  voxel_num[current_pillarId] = count;
+  voxel_num[current_pillarId] = count; // 存储voxel内点数量
 
-  uint4 idx = {0, 0, voxel_idy, voxel_idx};
-  ((uint4*)voxel_idxs)[current_pillarId] = idx;
+  uint4 idx = {0, 0, voxel_idy, voxel_idx}; //  voxel索引，batch_id, Z, Y, X
+  ((uint4*)voxel_idxs)[current_pillarId] = idx; // 保存voxel索引至voxel_idxs
 
   for (int i=0; i<count; i++){
     int inIndex = voxel_index*POINTS_PER_VOXEL + i;
     int outIndex = current_pillarId*POINTS_PER_VOXEL + i;
-    ((float4*)voxel_features)[outIndex] = ((float4*)voxels)[inIndex];
+    ((float4*)voxel_features)[outIndex] = ((float4*)voxels)[inIndex]; // 将原始点特征保存在voxel_features
   }
 
   // clear buffer for next infer
-  atomicExch(mask + voxel_index, 0);
+  atomicExch(mask + voxel_index, 0); // 清空buffer
 }
 
 // create 4 channels
@@ -132,14 +132,14 @@ cudaError_t generateBaseFeatures_launch(unsigned int *mask, float *voxels,
 {
   dim3 threads = {32,32};
   dim3 blocks = {(grid_x_size + threads.x -1)/threads.x,
-                 (grid_y_size + threads.y -1)/threads.y};
+                 (grid_y_size + threads.y -1)/threads.y}; // 向上取整
 
   generateBaseFeatures_kernel<<<blocks, threads, 0, stream>>>
       (mask, voxels, grid_y_size, grid_x_size,
        pillar_num,
        voxel_features,
        voxel_num,
-       voxel_idxs);
+       voxel_idxs); // pillar_num存储有效pillar个数，voxel_num保存了每个voxel内点数量
   cudaError_t err = cudaGetLastError();
   return err;
 }
@@ -298,9 +298,9 @@ class VoxelizationImplement : public Voxelization {
         param_ = param;
 
         mask_size_ = param_.grid_size.z * param_.grid_size.y
-                    * param_.grid_size.x * sizeof(unsigned int);
+                    * param_.grid_size.x * sizeof(unsigned int); // sizeof(unsigned int) = 4
         voxels_size_ = param_.grid_size.z * param_.grid_size.y * param_.grid_size.x
-                    * param_.max_points_per_voxel * 4 * sizeof(float);
+                    * param_.max_points_per_voxel * 4 * sizeof(float); // sizeof(float) = 4
         voxel_features_size_ = param_.max_voxels * param_.max_points_per_voxel * 4 * sizeof(float);
         voxel_num_size_ = param_.max_voxels * sizeof(unsigned int);
         voxel_idxs_size_ = param_.max_voxels * 4 * sizeof(unsigned int);

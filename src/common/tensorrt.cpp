@@ -120,7 +120,7 @@ class __native_engine_context {
     }
 
     engine_ = std::shared_ptr<nvinfer1::ICudaEngine>(runtime_->deserializeCudaEngine(pdata, size, nullptr),
-                                                     destroy_pointer<nvinfer1::ICudaEngine>);
+                                                     destroy_pointer<nvinfer1::ICudaEngine>); // 反序列化
     if (engine_ == nullptr) {
       printf("Failed to deserialize engine: %s\n", message_name);
       return false;

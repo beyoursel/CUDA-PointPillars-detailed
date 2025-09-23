@@ -95,7 +95,6 @@ int pillarScatterHalfKernelLaunch(const half *pillar_features_data,
 {
     dim3 blocks((featureX*featureY+PILLARS_PER_BLOCK-1)/PILLARS_PER_BLOCK);
     dim3 threads(PILLARS_PER_BLOCK);
-
     pillarScatterHalfkernel<<<blocks, threads, 0, stream>>>(pillar_features_data, coords_data, params_data, featureX, featureY, spatial_feature_data);
     auto err = cudaGetLastError();
     if (cudaSuccess != err) {
